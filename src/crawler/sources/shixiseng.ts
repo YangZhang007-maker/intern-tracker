@@ -65,6 +65,45 @@ interface ScrapeResult {
 export class ShixisengCrawler extends BaseCrawler {
   name = "shixiseng";
 
+  async fetchOfficialLink(sourceId: string, fallbackUrl: string): Promise<string> {
+    const url = `${BASE_URL}/intern/${sourceId}`;
+    const html = await this.fetch(url);
+    if (!html) return fallbackUrl;
+
+    const $ = cheerio.load(html);
+    const officialPatterns = ["加入我们", "立即申请", "投递简历", "官网投递", "网申入口", "申请职位"];
+
+    let bestLink = "";
+
+    $("a[target=_blank]").each((_, el) => {
+      const text = $(el).text().trim();
+      const href = $(el).attr("href") || "";
+
+      if (href.includes("shixiseng.com")) return;
+      if (!href.startsWith("http")) return;
+
+      for (const pattern of officialPatterns) {
+        if (text.includes(pattern)) {
+          bestLink = href;
+          return false;
+        }
+      }
+
+      if (!bestLink) {
+        const lower = href.toLowerCase();
+        const careerKeywords = ["zhaopin", "campus", "career", "job", "recruit", "talent", "hr.", "jobs.", "mokahr", "feishu", "zhiye"];
+        for (const kw of careerKeywords) {
+          if (lower.includes(kw)) {
+            bestLink = href;
+            break;
+          }
+        }
+      }
+    });
+
+    return bestLink || fallbackUrl;
+  }
+
   private async searchPage(
     keyword: string,
     cityChinese: string,
