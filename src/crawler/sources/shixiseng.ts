@@ -2,7 +2,6 @@ import * as cheerio from "cheerio";
 import { BaseCrawler } from "../base";
 import type { CrawlResult, City, JobType } from "@/lib/types";
 import { CITY_KEYWORDS } from "@/lib/constants";
-import { findCompanyCareerUrl } from "@/lib/company-careers";
 
 const BASE_URL = "https://www.shixiseng.com";
 
@@ -65,50 +64,6 @@ interface ScrapeResult {
 
 export class ShixisengCrawler extends BaseCrawler {
   name = "shixiseng";
-
-  async fetchOfficialLink(sourceId: string, fallbackUrl: string, companyName?: string): Promise<string> {
-    // Priority 1: Known company career page mapping
-    if (companyName) {
-      const mapped = findCompanyCareerUrl(companyName);
-      if (mapped) return mapped;
-    }
-
-    // Priority 2: Scrape detail page for external links
-    const url = `${BASE_URL}/intern/${sourceId}`;
-    const html = await this.fetch(url);
-    if (!html) return fallbackUrl;
-
-    const $ = cheerio.load(html);
-    let bestLink = "";
-
-    $("a[target=_blank]").each((_, el) => {
-      const text = $(el).text().trim();
-      const href = $(el).attr("href") || "";
-
-      if (href.includes("shixiseng.com")) return;
-      if (!href.startsWith("http")) return;
-
-      const lower = href.toLowerCase();
-      const careerKeywords = ["zhaopin", "campus", "career", "recruit", "talent", "hr.", "jobs.", "mokahr", "zhiye", "join.", "hotjob"];
-      for (const kw of careerKeywords) {
-        if (lower.includes(kw) && !bestLink) {
-          bestLink = href;
-        }
-      }
-
-      // Company-specific Feishu links (not generic /index)
-      if (lower.includes("feishu") && !lower.endsWith("/index") && !lower.endsWith("/index/") && !bestLink) {
-        bestLink = href;
-      }
-    });
-
-    // Don't return generic Feishu index - use fallback which is the shixiseng detail page
-    if (bestLink && bestLink.includes("feishu.cn/index")) {
-      bestLink = "";
-    }
-
-    return bestLink || fallbackUrl;
-  }
 
   private async searchPage(
     keyword: string,
