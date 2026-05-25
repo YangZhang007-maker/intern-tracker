@@ -46,8 +46,8 @@ function stripIconFont(text: string): string {
     .replace(/&#x[0-9a-f]+;?/gi, "")
     .replace(/&amp;#x[0-9a-f]+;?/gi, "")
     .replace(/[-]/g, "")
-    .replace(/[0-￿D]/g, "")
     .replace(/\s+/g, " ")
+    .replace(/^-+$/g, "")
     .trim();
 }
 
