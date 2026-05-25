@@ -45,6 +45,8 @@ function stripIconFont(text: string): string {
   return text
     .replace(/&#x[0-9a-f]+;?/gi, "")
     .replace(/&amp;#x[0-9a-f]+;?/gi, "")
+    .replace(/[-]/g, "")
+    .replace(/[0-￿D]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -114,7 +116,7 @@ export class ShixisengCrawler extends BaseCrawler {
         city,
         salary,
         tags,
-        link: `${BASE_URL}${href}`,
+        link: href.startsWith("http") ? href : `${BASE_URL}${href}`,
         description: description || title,
       });
     });

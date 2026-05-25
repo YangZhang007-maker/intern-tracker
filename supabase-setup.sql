@@ -37,3 +37,6 @@ CREATE POLICY "Allow insert for anon" ON jobs
 
 CREATE POLICY "Allow update for anon" ON jobs
   FOR UPDATE USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow delete for anon" ON jobs
+  FOR DELETE USING (true);
