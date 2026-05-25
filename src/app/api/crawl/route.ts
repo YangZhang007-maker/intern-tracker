@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { CrawlerManager } from "@/crawler/manager";
 import { DemoCrawler } from "@/crawler/sources/demo";
+import { ShixisengCrawler } from "@/crawler/sources/shixiseng";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,11 +17,8 @@ export async function POST(request: NextRequest) {
     }
 
     const manager = new CrawlerManager();
+    manager.register(new ShixisengCrawler());
     manager.register(new DemoCrawler());
-
-    // Register additional crawlers here as they are built
-    // manager.register(new ShixisengCrawler());
-    // manager.register(new NiukeCrawler());
 
     const result = await manager.runAll();
     return Response.json(result);
