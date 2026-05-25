@@ -80,14 +80,16 @@ export class ShixisengCrawler extends BaseCrawler {
     $(".intern-item").each((_, el) => {
       const $el = $(el);
 
-      const titleLink = $el.find(".intern-detail__job .title.ellipsis.font");
+      // Find job title link - must contain /intern/inn_ pattern (not company profile links)
+      const titleLink = $el.find("a[href*='/intern/inn_'].title.ellipsis.font");
       const titleRaw = titleLink.text() || titleLink.attr("title") || "";
       const title = stripIconFont(titleRaw);
       if (!title) return;
 
       const href = titleLink.attr("href") || "";
       const match = href.match(/\/intern\/(inn_[a-z0-9]+)/);
-      const sourceId = match ? match[1] : `sxs-${Date.now()}-${results.length}`;
+      if (!match) return;
+      const sourceId = match[1];
 
       const salaryRaw = $el.find(".day.font").first().text();
       const salary = stripIconFont(salaryRaw).replace(/[\/\s]*天/, "元/天") || null;
