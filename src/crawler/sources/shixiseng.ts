@@ -65,6 +65,15 @@ interface ScrapeResult {
 export class ShixisengCrawler extends BaseCrawler {
   name = "shixiseng";
 
+  async fetchPostDate(sourceId: string): Promise<string | null> {
+    const url = `${BASE_URL}/intern/${sourceId}`;
+    const html = await this.fetch(url);
+    if (!html) return null;
+
+    const match = html.match(/j\.refresh\s*=\s*"(\d{4}-\d{2}-\d{2})/);
+    return match ? match[1] : null;
+  }
+
   private async searchPage(
     keyword: string,
     cityChinese: string,
@@ -158,6 +167,15 @@ export class ShixisengCrawler extends BaseCrawler {
         for (const item of items) {
           if (seen.has(item.source_id)) continue;
           seen.add(item.source_id);
+
+          // Fetch actual posting date from detail page (skip in fast mode)
+          let postedDate = new Date().toISOString().split("T")[0];
+          if (!isFast) {
+            const realDate = await this.fetchPostDate(item.source_id);
+            if (realDate) postedDate = realDate;
+            await this.sleep(300);
+          }
+
           allResults.push({
             source_id: item.source_id,
             title: item.title,
@@ -166,7 +184,7 @@ export class ShixisengCrawler extends BaseCrawler {
             job_type: detectJobType(search.group, item.title, item.tags),
             description: item.description,
             apply_url: item.link,
-            posted_date: new Date().toISOString().split("T")[0],
+            posted_date: postedDate,
             salary: item.salary,
           });
         }
