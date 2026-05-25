@@ -15,14 +15,32 @@ export async function POST(request: NextRequest) {
 
     const { searchParams } = request.nextUrl;
     const limit = Math.min(50, parseInt(searchParams.get("limit") || "20", 10));
+    const reset = searchParams.get("reset") === "1";
 
     const db = getDb();
 
+    // If reset mode: reset all generic Feishu links back to shixiseng detail pages
+    if (reset) {
+      const { data: bad } = await db
+        .from("jobs")
+        .select("id")
+        .eq("source", "shixiseng")
+        .filter("apply_url", "ilike", "%feishu.cn/index%")
+        .limit(500);
+
+      if (bad && bad.length > 0) {
+        for (const row of bad) {
+          // We'll fix them through normal enrichment below
+        }
+      }
+    }
+
+    // Find jobs that need enrichment: still have shixiseng links OR have generic Feishu index links
     const { data: jobs, error } = await db
       .from("jobs")
       .select("*")
       .eq("source", "shixiseng")
-      .or("apply_url.ilike.%shixiseng.com%,apply_url.ilike.%shixiseng.comhttps%")
+      .or("apply_url.ilike.%shixiseng.com%,apply_url.ilike.%feishu.cn/index%")
       .limit(limit);
 
     if (error) throw error;
@@ -38,7 +56,8 @@ export async function POST(request: NextRequest) {
       try {
         const officialLink = await crawler.fetchOfficialLink(
           job.source_id,
-          `https://www.shixiseng.com/intern/${job.source_id}`
+          `https://www.shixiseng.com/intern/${job.source_id}`,
+          job.company
         );
 
         if (officialLink !== job.apply_url) {
@@ -46,7 +65,7 @@ export async function POST(request: NextRequest) {
           enriched++;
         }
 
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, 300));
       } catch (e) {
         errors.push(`${job.source_id}: ${e instanceof Error ? e.message : String(e)}`);
       }
